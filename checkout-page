@@ -107,7 +107,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     const dataLayerData = {
       event: eventPrefix + "purchase",
       ecommerce: {
-		transaction_idss : {{- checkout.order.name | json -}},
+	transaction_idss : {{- checkout.order.name | json -}},
         transaction_id: "{{ checkout.order_number | replace: '#', '' | default: checkout.id | replace: '#', '' }}",
         value: {{ checkout.total_price  | times: 0.01 }},
         payment_type: {{ order.transactions[order.transactions.length - 1].gateway  | times: 0.01}},
