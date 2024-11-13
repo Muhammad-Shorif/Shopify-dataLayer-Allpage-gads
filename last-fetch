@@ -1,0 +1,241 @@
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-P6MQM255');</script>
+<!-- End Google Tag Manager -->
+
+// Function to get cookie
+function getCookie(name) {
+    let value = "; " + document.cookie;
+    let parts = value.split("; " + name + "=");
+    if (parts.length === 2) return parts.pop().split(";").shift();
+}
+
+// Function to set cookie
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        let date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+// Generate unique user_id if not already set
+let user_id = getCookie('user_id');
+if (!user_id) {
+    user_id = 'user_' + Math.floor(Math.random() * 1000000); // Unique user_id generation
+    setCookie('user_id', user_id, 365); // Save as first-party cookie for 1 year
+}
+
+// Example functions to update and store purchase data
+function updatePurchaseData(orderAmount) {
+    // Get current order count and spending
+    let totalOrders = parseInt(getCookie('totalNumberOfOrders')) || 0;
+    let totalSpent = parseFloat(getCookie('totalSpent')) || 0;
+
+    // Update values
+    totalOrders += 1;
+    totalSpent += orderAmount;
+
+    // Save updated values as cookies
+    setCookie('totalNumberOfOrders', totalOrders, 365);
+    setCookie('totalSpent', totalSpent.toFixed(2), 365);
+}
+
+// Check if customer is on the thank you page (order confirmation page)
+if (window.location.href.includes('/thank_you')) {
+    // Shopify provides `order` object here on thank you page
+    // Update with actual purchase data
+    const orderAmount = {{ checkout.total_price | json }};
+    updatePurchaseData(orderAmount);
+}
+
+// Console log to check cookies
+console.log('User ID:', getCookie('user_id'));
+console.log('Total Orders:', getCookie('totalNumberOfOrders'));
+console.log('Total Spent:', getCookie('totalSpent'));
+
+
+{% if first_time_accessed %}
+<!-- GTM DataLayer -->
+<script>
+  (function() {
+    window.dataLayer = window.dataLayer || [];
+
+    const eventPrefix = '';
+    const formatedItemId = true;
+    const dataSchema = {
+      ecommerce: {
+          show: true
+      },
+      dynamicRemarketing: {
+          show: true,
+          business_vertical: 'retail'
+      }
+    }
+
+    // customer information
+    const currentUser = {};
+
+    {% if customer %}
+      currentUser.id = {{ customer.id }};
+      currentUser.first_name = "{{ customer.first_name }}";
+      currentUser.last_name = "{{ customer.last_name }}";
+      currentUser.full_name = "{{ customer.name }}";
+      currentUser.email = "{{ customer.email }}";
+      currentUser.phone = "{{ customer.default_address.phone }}";
+      
+      // Fixing new_customer logic: if customer has more than 1 order, they are not new
+      currentUser.new_customer = {% if customer.orders_count > 1 %}false{% else %}true{% endif %};
+
+      {% if customer.default_address %}
+        currentUser.address = {
+          address_summary: "{{ customer.default_address.summary }}",
+          address1: "{{ customer.default_address.address1 }}",
+          address2: "{{ customer.default_address.address2 }}",
+          city: "{{ customer.default_address.city }}",
+          street: "{{ customer.default_address.street }}",
+          zip_code: "{{ customer.default_address.zip }}",
+          company: "{{ customer.default_address.company }}",
+          country: "{{ customer.default_address.country.name }}",
+          country_code: "{{ customer.default_address.country_code }}",
+          province: "{{ customer.default_address.province }}"
+        };
+      {% endif %}
+
+      // Fixing lastOrder to show the date of the most recent order
+      currentUser.lastOrder = {% if customer.orders_count > 0 %}{{ customer.orders.first.created_at | date: '%B %d, %Y %I:%M%p' }}{% else %}"Not Available"{% endif %};
+
+      // Correct totalOrders to reflect the actual number of orders
+      currentUser.totalOrders = {{ customer.orders_count | json }};
+
+      // Fixing totalSpent to show the total amount spent by the customer
+      currentUser.totalSpent = {{ customer.total_spent | money_without_currency | remove: "," | json }};
+    {% elsif checkout.customer %}
+      currentUser.id = {{ checkout.customer.id }};
+      currentUser.first_name = "{{ checkout.customer.first_name }}";
+      currentUser.last_name = "{{ checkout.customer.last_name }}";
+      currentUser.full_name = "{{ checkout.customer.name }}";
+      currentUser.email = "{{ checkout.customer.email }}";
+      currentUser.phone = "{{ checkout.customer.default_address.phone }}";
+      
+      // Fixing new_customer logic: if customer has more than 1 order, they are not new
+      currentUser.new_customer = {% if checkout.customer.orders_count > 1 %}false{% else %}true{% endif %};
+
+      {% if checkout.billing_address %}
+        currentUser.address = {
+          address_summary: "{{ checkout.billing_address.summary }}",
+          address1: "{{ checkout.billing_address.address1 }}",
+          address2: "{{ checkout.billing_address.address2 }}",
+          city: "{{ checkout.billing_address.city }}",
+          street: "{{ checkout.billing_address.street }}",
+          zip_code: "{{ checkout.billing_address.zip }}",
+          company: "{{ checkout.billing_address.company }}",
+          country: "{{ checkout.billing_address.country.name }}",
+          country_code: "{{ checkout.billing_address.country_code }}",
+          province: "{{ checkout.billing_address.province }}"
+        };
+      {% endif %}
+
+      // Fixing lastOrder to show the date of the most recent order
+      currentUser.lastOrder = {% if checkout.customer.orders_count > 0 %}{{ checkout.customer.orders.first.created_at | date: '%B %d, %Y %I:%M%p' }}{% else %}"Not Available"{% endif %};
+
+      // Correct totalOrders to reflect the actual number of orders
+      currentUser.totalOrders = {{ checkout.customer.orders_count | json }};
+
+      // Fixing totalSpent to show the total amount spent by the customer
+      currentUser.totalSpent = {{ checkout.customer.total_spent | money_without_currency | remove: "," | json }};
+    {% endif %}
+
+    // Hashing email and phone for security
+    if (currentUser.email) {
+      currentUser.hash_email = "{{ currentUser.email | sha256}}";
+    }
+
+    if (currentUser.phone) {
+      currentUser.hash_phone = "{{ currentUser.phone | sha256}}";
+    }
+  
+    if (currentUser.id) {
+      currentUser.User_id = "{{ currentUser.id | sha256}}";
+    }
+
+    // Push user data to dataLayer
+    dataLayer.push({
+      customer: currentUser
+    });
+
+    // Calculate total quantity of items in the cart
+    let totalQuantity = 0;
+    {% for line_item in line_items %}
+      totalQuantity += {{ line_item.quantity }};
+    {% endfor %}
+
+    // Handle coupon codes (if any)
+    const couponCode = [];
+    {% for discount_application in discount_applications %}
+      couponCode.push("{{ discount_application.title }}");
+    {% endfor %}
+
+    dataLayer.push({ ecommerce: null });
+
+    // Purchase event data
+    const dataLayerData = {
+      event: eventPrefix + "purchase",
+      ecommerce: {
+        transaction_idss : {{ checkout.order.name | json }},
+        transaction_id: "{{ checkout.order_number | replace: '#', '' | default: checkout.id | replace: '#', '' }}",
+        value: {{ checkout.total_price  | times: 0.01 }},
+        payment_type: {{ order.transactions[order.transactions.length - 1].gateway  | times: 0.01 }},
+        tax: {{ checkout.tax_price | times: 0.01 }},
+        shipping: {{ checkout.shipping_price | times: 0.01 }},
+        discount: {{ checkout.discounts_amount | times: 0.01 }},
+        currency: "{{ checkout.currency }}",
+        coupon: couponCode.join(','),
+        totalQuantity: totalQuantity,
+        items: [
+          {% for line_item in line_items %}
+            {
+              product_id: formatedItemId ? "shopify_{{ shop.address.country_code }}_{{ line_item.product_id }}_{{ line_item.variant.id }}" : "{{ line_item.product_id }}",
+              item_id: "{{ line_item.product_id }}",
+              variant_id: "{{ line_item.variant.id }}",
+              item_name: "{{ line_item.product.title }}",
+              {% if line_item.variant.title != "Default Title" %}
+                'item_variant': "{{ line_item.variant.title }}",
+              {% endif %}
+              discount: {{ line_item.line_level_total_discount | times: 0.01 }},
+              sku: "{{ line_item.sku }}",
+              price: {{ line_item.final_price | times: 0.01 }},
+              quantity: {{ line_item.quantity }},
+              item_brand: "{{ line_item.vendor }}",
+              item_category: "{{ line_item.product.type }}"
+            },
+          {% endfor %}
+        ]
+      }
+    };
+
+    // For dynamic remarketing
+    if (dataSchema.dynamicRemarketing && dataSchema.dynamicRemarketing.show) {
+      dataLayerData['dynamicRemarketing'] = {
+          value: dataLayerData.ecommerce.value,
+          items: dataLayerData.ecommerce.items.map(item => ({id: item.product_id, google_business_vertical: dataSchema.dynamicRemarketing.business_vertical}))
+      };
+    }
+
+    // For ecommerce
+    if(!dataSchema.ecommerce || !dataSchema.ecommerce.show) {
+      delete dataLayerData['ecommerce'];
+    }
+
+    // Push final purchase data to dataLayer
+    dataLayer.push(dataLayerData);
+
+  })();
+</script>
+<!-- END GTM DataLayer -->
+{% endif %}
